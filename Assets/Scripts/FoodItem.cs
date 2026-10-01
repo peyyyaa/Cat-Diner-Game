@@ -4,12 +4,14 @@
 public class FoodItem
 {
     public string Name;
-    public decimal Price;  // decimal = precise money values (FoodPrice in the doc)
+    public decimal Price;    // decimal = precise money values (FoodPrice in the doc)
+    public float CookTime;   // seconds the kitchen needs to make it
 
-    // Constructor: runs when we write new FoodItem("Name", 45m)
-    public FoodItem(string name, decimal price)
+    // Constructor: runs when we write new FoodItem("Name", 45m, 4f)
+    public FoodItem(string name, decimal price, float cookTime)
     {
         Name = name;
         Price = price;
+        CookTime = cookTime;
     }
 }

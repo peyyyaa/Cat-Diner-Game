@@ -1,9 +1,10 @@
 using System.Collections.Generic;  // needed for List
 using UnityEngine;
 
-// Attach this to each customer object. The object also needs a Collider 2D
+// Attach this to the customer prefab. The object also needs a Collider 2D
 // (e.g. Circle Collider 2D) or clicks won't be detected.
-public class Customer : MonoBehaviour
+// It inherits from WaiterTarget, so the cat can walk to it.
+public class Customer : WaiterTarget
 {
     public string CustomerName = "Customer";            // string
     public CustomerState State = CustomerState.Waiting; // enum
@@ -20,8 +21,9 @@ public class Customer : MonoBehaviour
     // The color the customer turns as they run out of patience.
     public Color AngryColor = Color.red;
 
-    // List<T>: the food items this customer ordered (Order in the doc).
-    public List<FoodItem> Order = new List<FoodItem>();
+    // List<T>: the food items this customer ordered.
+    // (Called OrderedItems so it doesn't clash with the Order class.)
+    public List<FoodItem> OrderedItems = new List<FoodItem>();
 
     SpriteRenderer spriteRenderer;
     Color startColor;
@@ -75,8 +77,8 @@ public class Customer : MonoBehaviour
 
     void TakeOrder()
     {
-        Order.Clear();
-        Order.Add(Menu.GetRandomItem());
+        OrderedItems.Clear();
+        OrderedItems.Add(Menu.GetRandomItem());
 
         State = CustomerState.Ordering;  // now waiting for their food
 
@@ -84,8 +86,11 @@ public class Customer : MonoBehaviour
         Patience = MaxPatience;
         UpdateColor();
 
-        Debug.Log(CustomerName + " ordered " + Order[0].Name +
+        Debug.Log(CustomerName + " ordered " + OrderedItems[0].Name +
                   ". Total: ₱" + GetOrderTotal());
+
+        // Send the order to the kitchen.
+        KitchenManager.Instance.StartCooking(this);
     }
 
     void ServeFood()
@@ -96,7 +101,7 @@ public class Customer : MonoBehaviour
         // Back to their normal color while they enjoy the food.
         spriteRenderer.color = startColor;
 
-        Debug.Log("Served " + Order[0].Name + " to " + CustomerName + ". Enjoy!");
+        Debug.Log("Served " + OrderedItems[0].Name + " to " + CustomerName + ". Enjoy!");
     }
 
     // Adds up the price of everything in the order using the menu's price list.
@@ -104,7 +109,7 @@ public class Customer : MonoBehaviour
     {
         decimal total = 0m;  // local variable: only exists inside this method
 
-        foreach (FoodItem item in Order)
+        foreach (FoodItem item in OrderedItems)
         {
             total += Menu.MenuPrices[item.Name];
         }
@@ -138,8 +143,8 @@ public class Customer : MonoBehaviour
     }
 
     // Called by the Cat when it reaches this customer.
-    // switch: what the cat does depends on what the customer needs.
-    public void WaiterArrived()
+    // "override" = this is Customer's version of WaiterTarget's WaiterArrived.
+    public override void WaiterArrived(Cat cat)
     {
         switch (State)
         {
@@ -148,7 +153,12 @@ public class Customer : MonoBehaviour
                 break;
 
             case CustomerState.Ordering:
-                ServeFood();
+                // Only serve if the cat is holding THIS customer's food.
+                if (cat.CarriedOrder != null && cat.CarriedOrder.Customer == this)
+                {
+                    cat.DropFood();
+                    ServeFood();
+                }
                 break;
 
                 // Any other state (e.g. already eating): nothing to do.
@@ -173,9 +183,13 @@ public class Customer : MonoBehaviour
                 break;
 
             case CustomerState.Seated:
-            case CustomerState.Ordering:
-                // Taking orders and serving food are the cat waiter's job now.
+                // Taking orders is the cat waiter's job.
                 GameManager.Instance.Waiter.AddTask(this);
+                break;
+
+            case CustomerState.Ordering:
+                Debug.Log(CustomerName + "'s " + OrderedItems[0].Name +
+                          " is in the kitchen. Click the counter when it turns yellow.");
                 break;
 
             default:

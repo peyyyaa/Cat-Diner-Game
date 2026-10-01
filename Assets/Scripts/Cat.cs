@@ -2,56 +2,100 @@ using System.Collections.Generic;  // needed for Queue
 using UnityEngine;
 
 // The cat waiter (the Cat class from Table 2 of the doc).
-// Put this on ONE object named CatWaiter. It walks to customers and helps them.
+// Put this on ONE object named CatWaiter. It walks to customers and the kitchen.
 public class Cat : MonoBehaviour
 {
     public string CatName = "Penny";
     public float MoveSpeed = 5f;
 
-    // Where the cat stands, relative to the customer it's helping.
-    public Vector3 StandOffset = new Vector3(-0.9f, 0f, 0f);
+    // Optional: a small child object shown while the cat is carrying food.
+    public GameObject CarryIcon;
+
+    // The dish the cat is holding (null = paws are empty).
+    public Order CarriedOrder;
 
     // Queue<T>: a to-do list where the first task added is the first one done.
-    // Each task is "go to this customer and do whatever they need next".
-    Queue<Customer> tasks = new Queue<Customer>();
+    // It holds WaiterTargets, so it can contain customers AND the kitchen.
+    Queue<WaiterTarget> tasks = new Queue<WaiterTarget>();
 
-    Customer currentTask;  // the customer the cat is walking to right now
+    WaiterTarget currentTask;  // where the cat is walking right now
 
-    // Called by a Customer when the player clicks them.
-    public void AddTask(Customer customer)
+    void Start()
     {
-        // Don't add the same customer twice if the player double-clicks.
-        if (customer == currentTask || tasks.Contains(customer))
+        SetCarryIcon(false);
+    }
+
+    // Called when the player clicks a customer or the kitchen counter.
+    public void AddTask(WaiterTarget target)
+    {
+        // Don't add the same place twice if the player double-clicks.
+        if (target == currentTask || tasks.Contains(target))
         {
             return;
         }
 
-        tasks.Enqueue(customer);
-        Debug.Log(CatName + " will go to " + customer.CustomerName + ". Tasks waiting: " + tasks.Count);
+        tasks.Enqueue(target);
+        Debug.Log(CatName + " will go to " + target.name + ". Tasks waiting: " + tasks.Count);
     }
 
     void Update()
     {
-        // No current task? Take the next one from the queue, if there is one.
-        // (A customer who already left counts as null, so they're skipped too.)
+        // No current task? Decide what to do next.
         if (currentTask == null)
         {
-            if (tasks.Count > 0)
+            if (CarriedOrder != null)
             {
+                // Carrying food always comes first: deliver it straight away.
+                if (CarriedOrder.Customer != null)
+                {
+                    currentTask = CarriedOrder.Customer;
+                }
+                else
+                {
+                    Debug.Log("The customer left, so the " + CarriedOrder.ItemNames() + " went to waste.");
+                    DropFood();
+                }
+            }
+            else if (tasks.Count > 0)
+            {
+                // A customer who already left counts as null and is skipped next frame.
                 currentTask = tasks.Dequeue();
             }
             return;
         }
 
-        // Walk toward the customer a little bit each frame.
-        Vector3 target = currentTask.transform.position + StandOffset;
+        // Walk toward the target a little bit each frame.
+        Vector3 target = currentTask.StandPosition;
         transform.position = Vector3.MoveTowards(transform.position, target, MoveSpeed * Time.deltaTime);
 
-        // Close enough? Do the task and get ready for the next one.
+        // Close enough? Let the target decide what happens.
         if (Vector3.Distance(transform.position, target) < 0.05f)
         {
-            currentTask.WaiterArrived();
+            WaiterTarget arrivedAt = currentTask;
             currentTask = null;
+            arrivedAt.WaiterArrived(this);
+        }
+    }
+
+    public void PickUp(Order order)
+    {
+        CarriedOrder = order;
+        SetCarryIcon(true);
+        Debug.Log(CatName + " picked up " + order.ItemNames() + " for " + order.Customer.CustomerName + ".");
+    }
+
+    // Empties the cat's paws (after serving, or if the customer left).
+    public void DropFood()
+    {
+        CarriedOrder = null;
+        SetCarryIcon(false);
+    }
+
+    void SetCarryIcon(bool visible)
+    {
+        if (CarryIcon != null)
+        {
+            CarryIcon.SetActive(visible);
         }
     }
 }
