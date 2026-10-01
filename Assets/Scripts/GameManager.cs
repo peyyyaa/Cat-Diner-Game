@@ -10,6 +10,9 @@ public class GameManager : MonoBehaviour
     // Drag your table objects into this array in the Inspector.
     public Table[] Tables;
 
+    // Drag your CatWaiter object into this slot in the Inspector.
+    public Cat Waiter;
+
     // How long one game session lasts, in seconds.
     public float SessionLength = 90f;
     public float TimeLeft;

@@ -137,6 +137,24 @@ public class Customer : MonoBehaviour
         Destroy(gameObject);  // remove the customer from the scene
     }
 
+    // Called by the Cat when it reaches this customer.
+    // switch: what the cat does depends on what the customer needs.
+    public void WaiterArrived()
+    {
+        switch (State)
+        {
+            case CustomerState.Seated:
+                TakeOrder();
+                break;
+
+            case CustomerState.Ordering:
+                ServeFood();
+                break;
+
+                // Any other state (e.g. already eating): nothing to do.
+        }
+    }
+
     // Unity calls this automatically when the object is clicked.
     void OnMouseDown()
     {
@@ -155,11 +173,9 @@ public class Customer : MonoBehaviour
                 break;
 
             case CustomerState.Seated:
-                TakeOrder();
-                break;
-
             case CustomerState.Ordering:
-                ServeFood();
+                // Taking orders and serving food are the cat waiter's job now.
+                GameManager.Instance.Waiter.AddTask(this);
                 break;
 
             default:
