@@ -1,4 +1,5 @@
 using System.Collections.Generic;  // needed for List
+using TMPro;                       // needed for TextMeshPro text
 using UnityEngine;
 
 // Attach this to the customer prefab. The object also needs a Collider 2D
@@ -21,6 +22,12 @@ public class Customer : WaiterTarget
     // The color the customer turns as they run out of patience.
     public Color AngryColor = Color.red;
 
+    // Optional child objects (drag them in on the prefab):
+    // a text above the head, and a bar that shrinks as patience runs out.
+    public TMP_Text StatusLabel;
+    public SpriteRenderer PatienceBar;
+    float barFullWidth;
+
     // List<T>: the food items this customer ordered.
     // (Called OrderedItems so it doesn't clash with the Order class.)
     public List<FoodItem> OrderedItems = new List<FoodItem>();
@@ -34,6 +41,11 @@ public class Customer : WaiterTarget
         Patience = MaxPatience;
         spriteRenderer = GetComponent<SpriteRenderer>();
         startColor = spriteRenderer.color;
+
+        if (PatienceBar != null)
+        {
+            barFullWidth = PatienceBar.transform.localScale.x;
+        }
     }
 
     // Update runs once every frame. This replaces the doc's while loop:
@@ -41,6 +53,8 @@ public class Customer : WaiterTarget
     // we do a tiny bit of work each frame.
     void Update()
     {
+        UpdateLabel();
+
         // Patience drains while the customer is waiting for a table,
         // waiting to order, or waiting for their food.
         if (State == CustomerState.Waiting ||
@@ -73,6 +87,46 @@ public class Customer : WaiterTarget
     {
         float patienceLeft = Patience / MaxPatience;  // 1 = full, 0 = empty
         spriteRenderer.color = Color.Lerp(AngryColor, startColor, patienceLeft);
+
+        // Shrink the patience bar and fade it from green to red.
+        if (PatienceBar != null)
+        {
+            Vector3 scale = PatienceBar.transform.localScale;
+            scale.x = barFullWidth * Mathf.Max(patienceLeft, 0f);
+            PatienceBar.transform.localScale = scale;
+            PatienceBar.color = Color.Lerp(Color.red, Color.green, patienceLeft);
+        }
+    }
+
+    // switch: show a short message above the customer based on their state.
+    void UpdateLabel()
+    {
+        if (StatusLabel == null)
+        {
+            return;
+        }
+
+        string need;
+        switch (State)
+        {
+            case CustomerState.Waiting:
+                need = "Table, please!";
+                break;
+            case CustomerState.Seated:
+                need = "Ready to order!";
+                break;
+            case CustomerState.Ordering:
+                need = OrderedItems[0].Name;
+                break;
+            case CustomerState.Eating:
+                need = "Yum!";
+                break;
+            default:
+                need = "";
+                break;
+        }
+
+        StatusLabel.text = CustomerName + "\n" + need;
     }
 
     void TakeOrder()
@@ -100,6 +154,12 @@ public class Customer : WaiterTarget
 
         // Back to their normal color while they enjoy the food.
         spriteRenderer.color = startColor;
+
+        // Happy customers don't need a patience bar.
+        if (PatienceBar != null)
+        {
+            PatienceBar.gameObject.SetActive(false);
+        }
 
         Debug.Log("Served " + OrderedItems[0].Name + " to " + CustomerName + ". Enjoy!");
     }

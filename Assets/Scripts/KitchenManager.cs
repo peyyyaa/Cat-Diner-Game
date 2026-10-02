@@ -1,4 +1,5 @@
 using System.Collections.Generic;  // needed for List
+using TMPro;                       // needed for TextMeshPro text
 using UnityEngine;
 
 // The kitchen counter (KitchenManager from the doc).
@@ -10,6 +11,9 @@ public class KitchenManager : WaiterTarget
 
     // The counter turns this color when at least one dish is ready.
     public Color ReadyColor = Color.yellow;
+
+    // Optional text on the counter showing what's cooking and ready.
+    public TMP_Text StatusLabel;
 
     // List<Order>: every order currently cooking or waiting to be picked up.
     List<Order> orders = new List<Order>();
@@ -40,6 +44,8 @@ public class KitchenManager : WaiterTarget
     void Update()
     {
         bool anyReady = false;
+        int cookingCount = 0;
+        int readyCount = 0;
 
         // for loop going BACKWARD, because we might remove orders while looping
         // (removing while going forward would skip items).
@@ -69,11 +75,21 @@ public class KitchenManager : WaiterTarget
             if (order.IsReady)
             {
                 anyReady = true;
+                readyCount++;
+            }
+            else
+            {
+                cookingCount++;
             }
         }
 
         // Ternary operator: a one-line if-else. "condition ? ifTrue : ifFalse"
         spriteRenderer.color = anyReady ? ReadyColor : normalColor;
+
+        if (StatusLabel != null)
+        {
+            StatusLabel.text = "Kitchen\nCooking: " + cookingCount + "  Ready: " + readyCount;
+        }
     }
 
     void OnMouseDown()

@@ -21,6 +21,13 @@ public class CustomerSpawner : MonoBehaviour
     // Random names for customers (array of strings).
     public string[] CustomerNames = { "Mochi", "Tofu", "Biscuit", "Mango", "Pancake", "Nori", "Kiwi", "Sushi" };
 
+    // Optional: different cat pictures. Each new customer gets a random one.
+    // (Only used if Customer Looks below is empty.)
+    public Sprite[] CustomerSprites;
+
+    // Optional: full animated cats. Each new customer gets a random one.
+    public CatLook[] CustomerLooks;
+
     // array: which customer is standing in each waiting spot (empty = free spot).
     Customer[] waitingSpots;
     float spawnTimer;
@@ -64,6 +71,18 @@ public class CustomerSpawner : MonoBehaviour
 
         customer.CustomerName = CustomerNames[Random.Range(0, CustomerNames.Length)];
         customer.MaxPatience = Random.Range(MinPatience, MaxPatience);
+
+        // Give them a random look. Animated cats win over still pictures.
+        CustomerAnimator animator = customer.GetComponent<CustomerAnimator>();
+        if (animator != null && CustomerLooks != null && CustomerLooks.Length > 0)
+        {
+            animator.Look = CustomerLooks[Random.Range(0, CustomerLooks.Length)];
+        }
+        else if (CustomerSprites != null && CustomerSprites.Length > 0)
+        {
+            Sprite look = CustomerSprites[Random.Range(0, CustomerSprites.Length)];
+            customer.GetComponent<SpriteRenderer>().sprite = look;
+        }
 
         waitingSpots[spot] = customer;
         Debug.Log(customer.CustomerName + " arrived at the diner.");
