@@ -15,8 +15,24 @@ public class KitchenManager : WaiterTarget
     // Optional text on the counter showing what's cooking and ready.
     public TMP_Text StatusLabel;
 
+    // Optional: the plate that appears on the counter when a dish is ready.
+    // Leave empty to keep the old behavior (counter turns yellow, click the counter).
+    public ServingPlate PlatePrefab;
+
+    // Empty child objects on the counter where ready plates are put down.
+    public Transform[] PlateSpots;
+
+    // Which food picture to show on the plate for each dish.
+    public FoodSprite[] FoodSprites;
+
+    // Gap between plates when one order has more than one dish.
+    public float PlateSpacing = 0.4f;
+
     // List<Order>: every order currently cooking or waiting to be picked up.
     List<Order> orders = new List<Order>();
+
+    // array: which order is sitting on each plate spot (null = spot is free).
+    Order[] spotUsedBy;
 
     SpriteRenderer spriteRenderer;
     Color normalColor;
@@ -30,6 +46,9 @@ public class KitchenManager : WaiterTarget
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
         normalColor = spriteRenderer.color;
+
+        int spotCount = (PlateSpots == null) ? 0 : PlateSpots.Length;
+        spotUsedBy = new Order[spotCount];
     }
 
     // Called by a Customer when the cat takes their order.
@@ -38,7 +57,7 @@ public class KitchenManager : WaiterTarget
         Order order = new Order(customer, customer.OrderedItems);
         orders.Add(order);
         Debug.Log("Kitchen is cooking " + order.ItemNames() + " for " +
-                  customer.CustomerName + " (" + order.CookTimeLeft + "s).");
+                  customer.DisplayName + " (" + order.CookTimeLeft + "s).");
     }
 
     void Update()
@@ -56,7 +75,7 @@ public class KitchenManager : WaiterTarget
             // The customer gave up and left, so throw their order away.
             if (order.Customer == null)
             {
-                orders.RemoveAt(i);
+                RemoveOrder(order);
                 continue;  // skip to the next order
             }
 
@@ -67,8 +86,9 @@ public class KitchenManager : WaiterTarget
                 if (order.CookTimeLeft <= 0f)
                 {
                     order.IsReady = true;
-                    Debug.Log(order.ItemNames() + " for " + order.Customer.CustomerName +
-                              " is ready! Click the counter.");
+                    ShowPlates(order);
+                    Debug.Log(order.ItemNames() + " for " + order.Customer.DisplayName +
+                              " is ready! Click the plates on the counter.");
                 }
             }
 
@@ -92,6 +112,97 @@ public class KitchenManager : WaiterTarget
         }
     }
 
+    // Puts one plate per dish on a free spot of the counter.
+    void ShowPlates(Order order)
+    {
+        if (PlatePrefab == null)
+        {
+            return;  // no plate prefab: the counter just turns yellow like before
+        }
+
+        Vector3 basePosition = transform.position;
+        int spot = FindFreeSpot();
+
+        if (spot != -1)
+        {
+            spotUsedBy[spot] = order;
+            order.CounterSpot = spot;
+            basePosition = PlateSpots[spot].position;
+        }
+
+        for (int i = 0; i < order.Items.Count; i++)
+        {
+            Vector3 position = basePosition + new Vector3(i * PlateSpacing, 0f, 0f);
+
+            // Instantiate = make a copy of the plate prefab in the scene.
+            ServingPlate plate = Instantiate(PlatePrefab, position, Quaternion.identity);
+            plate.Order = order;
+            plate.ShowFood(SpriteFor(order.Items[i]));
+            plate.SetOrderInLayer(3);  // just above the counter
+            plate.SetClickable(true);
+            order.Plates.Add(plate);
+        }
+    }
+
+    // for loop: the first plate spot with nothing on it, or -1 if all are full.
+    int FindFreeSpot()
+    {
+        for (int i = 0; i < spotUsedBy.Length; i++)
+        {
+            if (spotUsedBy[i] == null)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    void FreeSpot(Order order)
+    {
+        int spot = order.CounterSpot;
+
+        if (spot >= 0 && spot < spotUsedBy.Length && spotUsedBy[spot] == order)
+        {
+            spotUsedBy[spot] = null;
+        }
+
+        order.CounterSpot = -1;
+    }
+
+    // Removes an order completely (its customer left): plates disappear too.
+    void RemoveOrder(Order order)
+    {
+        orders.Remove(order);
+        FreeSpot(order);
+
+        foreach (ServingPlate plate in order.Plates)
+        {
+            if (plate != null)
+            {
+                Destroy(plate.gameObject);
+            }
+        }
+        order.Plates.Clear();
+    }
+
+    // foreach: look up the picture for a dish by its name.
+    public Sprite SpriteFor(FoodItem item)
+    {
+        if (FoodSprites == null)
+        {
+            return null;
+        }
+
+        foreach (FoodSprite foodSprite in FoodSprites)
+        {
+            if (foodSprite.FoodName == item.Name)
+            {
+                return foodSprite.Sprite;
+            }
+        }
+        return null;
+    }
+
     void OnMouseDown()
     {
         if (GameManager.Instance.GameFinished)
@@ -102,8 +213,22 @@ public class KitchenManager : WaiterTarget
         GameManager.Instance.Waiter.AddTask(this);
     }
 
-    // The cat reached the counter: hand over the oldest ready dish.
+    // The counter itself was clicked: hand over the oldest ready order.
     public override void WaiterArrived(Cat cat)
+    {
+        Order readyOrder = FindReadyOrder();
+
+        if (readyOrder == null)
+        {
+            Debug.Log("Nothing is ready yet.");
+            return;
+        }
+
+        HandOrderToCat(readyOrder, cat);
+    }
+
+    // Gives a ready order (and its plates) to the waiter.
+    public void HandOrderToCat(Order order, Cat cat)
     {
         if (cat.CarriedOrder != null)
         {
@@ -111,17 +236,15 @@ public class KitchenManager : WaiterTarget
             return;
         }
 
-        Order readyOrder = FindReadyOrder();
+        if (order == null || !orders.Contains(order) || !order.IsReady)
+        {
+            Debug.Log("That order was already picked up.");
+            return;
+        }
 
-        if (readyOrder == null)
-        {
-            Debug.Log("Nothing is ready yet.");
-        }
-        else
-        {
-            orders.Remove(readyOrder);
-            cat.PickUp(readyOrder);
-        }
+        orders.Remove(order);
+        FreeSpot(order);
+        cat.PickUp(order);
     }
 
     // for loop: the first order that's finished cooking, or null if none.

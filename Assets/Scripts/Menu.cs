@@ -11,9 +11,9 @@ public static class Menu
     // each cook time (in seconds) tells C# it's a float.
     public static FoodItem[] MenuItems =
     {
-        new FoodItem("Fish Sandwich", 45m, 4f),
-        new FoodItem("Tuna Pasta", 60m, 6f),
-        new FoodItem("Milk Tea", 35m, 2f)
+        new FoodItem("Fish Burger and Fries", 45m, 4f),
+        new FoodItem("Hotdog Bun", 60m, 6f),
+        new FoodItem("Ice Cream Sundae", 35m, 2f)
     };
 
     // Dictionary<TKey, TValue>: look up a price by dish name (MenuPrices in the doc).

@@ -6,6 +6,9 @@ using UnityEngine;
 // counts as a click on the whole party.
 public class PartyMember : MonoBehaviour
 {
+    // Optional: the buddy's own little menu card, shown while the party decides.
+    public GameObject MenuProp;
+
     Customer leader;
 
     void OnMouseDown()

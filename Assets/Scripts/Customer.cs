@@ -37,20 +37,34 @@ public class Customer : WaiterTarget
     public float MaxPatience = 10f;
     public float Patience;   // public so you can watch it count down in the Inspector
 
+    // How long they look at the menu after sitting down (a random time between these).
+    public float MinMenuTime = 2f;
+    public float MaxMenuTime = 4f;
+    float menuTimer;
+
+    // Optional: a little menu card in front of the cat while it decides.
+    public GameObject MenuProp;
+
     // How many seconds the customer spends eating before paying.
     public float EatingTime = 3f;
     float eatingTimer;
+
+    // The tip is up to this part of the bill (0.2 = 20%):
+    // the more patience left when the food arrives, the bigger the tip.
+    public float MaxTipPercent = 0.2f;
+    float patienceWhenServed;
 
     // The color the customer turns as they run out of patience.
     public Color AngryColor = Color.red;
 
     // Optional child objects (drag them in on the prefab):
-    // a text above the head, and a bar that shrinks as patience runs out.
-    public TMP_Text StatusLabel;
-    public SpriteRenderer PatienceBar;
+    public TMP_Text StatusLabel;          // text in the speech bubble
+    public SpriteRenderer PatienceBar;    // the colored bar
+    public Transform PatienceBarAnchor;   // optional: the bar shrinks toward this point
+    public GameObject PatienceMeter;      // optional: the whole meter, hidden once served
     float barFullWidth;
 
-    // List<T>: the food items this customer ordered.
+    // List<T>: the food items this party ordered (one per cat).
     // (Called OrderedItems so it doesn't clash with the Order class.)
     public List<FoodItem> OrderedItems = new List<FoodItem>();
 
@@ -72,10 +86,27 @@ public class Customer : WaiterTarget
             buddyStartColor = buddyRenderer.color;
         }
 
+        Transform bar = BarToScale();
+        if (bar != null)
+        {
+            barFullWidth = bar.localScale.x;
+        }
+
+        ShowMenuProps(false);
+    }
+
+    // The thing that shrinks: the anchor if there is one, otherwise the bar itself.
+    Transform BarToScale()
+    {
+        if (PatienceBarAnchor != null)
+        {
+            return PatienceBarAnchor;
+        }
         if (PatienceBar != null)
         {
-            barFullWidth = PatienceBar.transform.localScale.x;
+            return PatienceBar.transform;
         }
+        return null;
     }
 
     // Update runs once every frame. This replaces the doc's while loop:
@@ -100,6 +131,16 @@ public class Customer : WaiterTarget
                 LeaveUnhappy();
             }
         }
+        else if (State == CustomerState.ReadingMenu)
+        {
+            // Happily reading the menu: no patience lost.
+            menuTimer -= Time.deltaTime;
+
+            if (menuTimer <= 0f)
+            {
+                ReadyToOrder();
+            }
+        }
         else if (State == CustomerState.Eating)
         {
             // Happy customers don't lose patience while eating.
@@ -107,8 +148,41 @@ public class Customer : WaiterTarget
 
             if (eatingTimer <= 0f)
             {
-                PayAndLeave();
+                FinishEating();
             }
+        }
+    }
+
+    // Called by the GameManager right after the party is seated.
+    public void SitDown()
+    {
+        State = CustomerState.ReadingMenu;
+        menuTimer = Random.Range(MinMenuTime, MaxMenuTime);
+
+        // Getting a seat makes them happy again.
+        Patience = MaxPatience;
+        UpdateColor();
+
+        ShowMenuProps(true);
+    }
+
+    void ReadyToOrder()
+    {
+        State = CustomerState.Seated;  // paw up: ready to order
+        ShowMenuProps(false);
+        Debug.Log(DisplayName + " is ready to order!");
+    }
+
+    void ShowMenuProps(bool visible)
+    {
+        if (MenuProp != null)
+        {
+            MenuProp.SetActive(visible);
+        }
+
+        if (HasBuddy && Buddy.MenuProp != null)
+        {
+            Buddy.MenuProp.SetActive(visible);
         }
     }
 
@@ -125,11 +199,16 @@ public class Customer : WaiterTarget
         }
 
         // Shrink the patience bar and fade it from green to red.
+        Transform bar = BarToScale();
+        if (bar != null)
+        {
+            Vector3 scale = bar.localScale;
+            scale.x = barFullWidth * Mathf.Max(patienceLeft, 0f);
+            bar.localScale = scale;
+        }
+
         if (PatienceBar != null)
         {
-            Vector3 scale = PatienceBar.transform.localScale;
-            scale.x = barFullWidth * Mathf.Max(patienceLeft, 0f);
-            PatienceBar.transform.localScale = scale;
             PatienceBar.color = Color.Lerp(Color.red, Color.green, patienceLeft);
         }
     }
@@ -147,6 +226,9 @@ public class Customer : WaiterTarget
         {
             case CustomerState.Waiting:
                 need = "Table, please!";
+                break;
+            case CustomerState.ReadingMenu:
+                need = "Hmm, let me see...";
                 break;
             case CustomerState.Seated:
                 need = "Ready to order!";
@@ -208,6 +290,9 @@ public class Customer : WaiterTarget
         State = CustomerState.Eating;
         eatingTimer = EatingTime;
 
+        // Remember how happy they were when the food arrived (for the tip).
+        patienceWhenServed = Mathf.Clamp01(Patience / MaxPatience);
+
         // Back to their normal color while they enjoy the food.
         spriteRenderer.color = startColor;
         if (HasBuddy)
@@ -216,7 +301,11 @@ public class Customer : WaiterTarget
         }
 
         // Happy customers don't need a patience bar.
-        if (PatienceBar != null)
+        if (PatienceMeter != null)
+        {
+            PatienceMeter.SetActive(false);
+        }
+        else if (PatienceBar != null)
         {
             PatienceBar.gameObject.SetActive(false);
         }
@@ -237,29 +326,48 @@ public class Customer : WaiterTarget
         return total;
     }
 
-    void PayAndLeave()
+    // The faster they were served, the bigger the tip.
+    decimal CalculateTip(decimal bill)
     {
-        GameManager.Instance.ReceivePayment(this, GetOrderTotal());
-        Leave();
+        decimal percent = (decimal)(MaxTipPercent * patienceWhenServed);  // cast float -> decimal
+        return decimal.Round(bill * percent);  // round to whole pesos
+    }
+
+    // Done eating: leave the money (bill + tip) on the table and go home.
+    void FinishEating()
+    {
+        decimal bill = GetOrderTotal();
+        decimal tip = CalculateTip(bill);
+
+        GameManager.Instance.CustomerFinished(this);
+
+        if (AssignedTable != null)
+        {
+            // The money waits on the table until the waiter collects it.
+            AssignedTable.LeaveMoney(bill, tip);
+        }
+        else
+        {
+            GameManager.Instance.CollectMoney(bill, tip);
+        }
+
+        State = CustomerState.Leaving;
+        Destroy(gameObject);  // remove the customer (and their buddy) from the scene
     }
 
     void LeaveUnhappy()
     {
         GameManager.Instance.CustomerLeftUnhappy(this);
-        Leave();
-    }
-
-    // Shared by both ways of leaving: give the table back and disappear.
-    void Leave()
-    {
         State = CustomerState.Leaving;
 
+        // No money left behind: the table is free right away.
         if (AssignedTable != null)
         {
+            AssignedTable.ClearDishes();
             AssignedTable.Free();
         }
 
-        Destroy(gameObject);  // remove the customer from the scene
+        Destroy(gameObject);
     }
 
     // Once seated, the cat waiter goes to the table's waiter spot instead of
@@ -290,12 +398,19 @@ public class Customer : WaiterTarget
                 // Only serve if the cat is holding THIS customer's food.
                 if (cat.CarriedOrder != null && cat.CarriedOrder.Customer == this)
                 {
-                    cat.DropFood();
+                    Order order = cat.HandOver();
+
+                    // Put the plates on the table in front of the cats.
+                    if (AssignedTable != null)
+                    {
+                        AssignedTable.PlaceDishes(order.Plates);
+                    }
+
                     ServeFood();
                 }
                 break;
 
-                // Any other state (e.g. already eating): nothing to do.
+                // Any other state (e.g. still reading the menu): nothing to do.
         }
     }
 
@@ -322,6 +437,10 @@ public class Customer : WaiterTarget
                 GameManager.Instance.TrySeatCustomer(this);
                 break;
 
+            case CustomerState.ReadingMenu:
+                Debug.Log(DisplayName + " is still looking at the menu.");
+                break;
+
             case CustomerState.Seated:
                 // Taking orders is the cat waiter's job.
                 GameManager.Instance.Waiter.AddTask(this);
@@ -329,11 +448,11 @@ public class Customer : WaiterTarget
 
             case CustomerState.Ordering:
                 Debug.Log(DisplayName + "'s " + OrderText() +
-                          " is in the kitchen. Click the counter when it turns yellow.");
+                          " is in the kitchen. Click the plates on the counter when they're ready.");
                 break;
 
             default:
-                Debug.Log(CustomerName + " is currently " + State + ".");
+                Debug.Log(DisplayName + " is currently " + State + ".");
                 break;
         }
     }

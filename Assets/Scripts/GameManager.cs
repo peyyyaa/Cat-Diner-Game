@@ -13,6 +13,10 @@ public class GameManager : MonoBehaviour
     // Drag your CatWaiter object into this slot in the Inspector.
     public Cat Waiter;
 
+    // Optional: the money customers leave on the table (drag the Money prefab here).
+    // Leave empty and money is counted straight away when customers finish eating.
+    public TableMoney MoneyPrefab;
+
     // How long one game session lasts, in seconds.
     public float SessionLength = 90f;
     public float TimeLeft;
@@ -23,6 +27,9 @@ public class GameManager : MonoBehaviour
     // decimal for precise money values. Unity's Inspector can't display
     // decimals, but it now shows on screen through the UIManager.
     public decimal Money = 0m;
+
+    // How much of the money came from tips.
+    public decimal TotalTips = 0m;
 
     // How many customers paid and left happy.
     public int CustomersServed = 0;
@@ -80,7 +87,7 @@ public class GameManager : MonoBehaviour
         {
             freeTable.Seat(customer);
             customer.AssignedTable = freeTable;
-            customer.State = CustomerState.Seated;
+            customer.SitDown();  // they look at the menu first
             Debug.Log(customer.DisplayName + " was seated at " + freeTable.name + ".");
         }
         else
@@ -90,13 +97,20 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // Called by a Customer when they finish eating (like Figure 3 in the doc).
-    public void ReceivePayment(Customer customer, decimal amount)
+    // Called by a Customer when they finish eating and leave their money on the table.
+    public void CustomerFinished(Customer customer)
     {
-        Money += amount;
         CustomersServed++;
-        Debug.Log(customer.CustomerName + " paid ₱" + amount +
-                  ". Money: ₱" + Money + " | Served: " + CustomersServed);
+        Debug.Log(customer.DisplayName + " finished eating and left money on the table. Served: " + CustomersServed);
+    }
+
+    // Called when the waiter collects the money from a table (like Figure 3 in the doc).
+    // Only now is the money added to the total.
+    public void CollectMoney(decimal bill, decimal tip)
+    {
+        Money += bill + tip;
+        TotalTips += tip;
+        Debug.Log("Collected ₱" + bill + " + ₱" + tip + " tip. Money: ₱" + Money);
     }
 
     // Called by a Customer right before it leaves unhappy.
@@ -112,6 +126,11 @@ public class GameManager : MonoBehaviour
     {
         for (int i = 0; i < Tables.Length; i++)
         {
+            if (Tables[i] == null)
+            {
+                continue;  // empty slot in the Inspector: skip it
+            }
+
             if (!Tables[i].IsOccupied && Tables[i].SeatCount >= partySize)
             {
                 return Tables[i];

@@ -9,6 +9,12 @@ public class Order
     public float CookTimeLeft;     // seconds until it's ready
     public bool IsReady;
 
+    // The plates that appear on the counter when it's ready (one per dish).
+    public List<ServingPlate> Plates = new List<ServingPlate>();
+
+    // Which spot on the counter the plates are sitting on (-1 = none).
+    public int CounterSpot = -1;
+
     public Order(Customer customer, List<FoodItem> items)
     {
         Customer = customer;

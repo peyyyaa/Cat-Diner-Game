@@ -90,6 +90,9 @@ public class CustomerAnimator : MonoBehaviour
             case CustomerState.Eating:
                 return Pick(Look.SideEat, Look.Eat);
 
+            case CustomerState.ReadingMenu:
+                return Pick(Look.SideSit, Look.Idle);   // calm, looking at the menu
+
             case CustomerState.Waiting:
             case CustomerState.Ordering:
                 if (IsUpset())
