@@ -214,6 +214,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 2017268055}
+        m_TargetAssemblyTypeName: SoundManager, Assembly-CSharp
+        m_MethodName: PlayClick
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &314238553
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -430,6 +442,18 @@ MonoBehaviour:
       - m_Target: {fileID: 1286889198}
         m_TargetAssemblyTypeName: MainMenu, Assembly-CSharp
         m_MethodName: StartGame
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 2017268055}
+        m_TargetAssemblyTypeName: SoundManager, Assembly-CSharp
+        m_MethodName: PlayClick
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -842,6 +866,65 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2017268054
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2017268056}
+  - component: {fileID: 2017268055}
+  m_Layer: 0
+  m_Name: SoundManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2017268055
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2017268054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa96ddc4e805c6841b93aca0e7274e9b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoundManager
+  Arrive: {fileID: 8300000, guid: 74827c0e410074740bbfb229b17cbfb7, type: 3}
+  Seat: {fileID: 8300000, guid: 06ad21942ad4d324791c224b97d7be92, type: 3}
+  Order: {fileID: 8300000, guid: 65a148b4f004e2a49a0e70af18df17d3, type: 3}
+  FoodReady: {fileID: 8300000, guid: a0a03fe1d1f656b45b40842107d25dcd, type: 3}
+  PickUp: {fileID: 8300000, guid: efb74cee6e6166847bc5503ef1224b70, type: 3}
+  Serve: {fileID: 8300000, guid: 7de0e193f0da47b4695c646f9167a6bf, type: 3}
+  Coin: {fileID: 8300000, guid: 97171a53bc53fd04d99d7dc3e003e317, type: 3}
+  Tip: {fileID: 8300000, guid: 22ceed74ac411b2429d1ac38e6eadb41, type: 3}
+  Angry: {fileID: 8300000, guid: 1f45633d6c6ee1a488980908cf383636, type: 3}
+  Click: {fileID: 8300000, guid: ce225abb36fd234428251400d5fd8f75, type: 3}
+  DayWon: {fileID: 8300000, guid: c2baf8ec249e7f042b7dcbdee3b27317, type: 3}
+  DayLost: {fileID: 8300000, guid: 1eeaa8cce0c195643bccbae9803e95b3, type: 3}
+  Music: {fileID: 0}
+  SfxVolume: 0.7
+  MusicVolume: 0.35
+--- !u!4 &2017268056
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2017268054}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 728.7387, y: 840.79785, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2087444523
 GameObject:
   m_ObjectHideFlags: 0
@@ -1124,3 +1207,4 @@ SceneRoots:
   - {fileID: 1100503344}
   - {fileID: 1412376283}
   - {fileID: 1286889199}
+  - {fileID: 2017268056}

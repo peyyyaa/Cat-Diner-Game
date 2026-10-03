@@ -496,6 +496,7 @@ public class Cat : MonoBehaviour
 
         // No plate art? Show the simple carry icon instead.
         SetCarryIcon(order.Plates.Count == 0);
+        SoundManager.Play(Sfx.PickUp);
 
         Debug.Log(CatName + " picked up " + order.ItemNames() + " for " + order.Customer.DisplayName + ".");
     }

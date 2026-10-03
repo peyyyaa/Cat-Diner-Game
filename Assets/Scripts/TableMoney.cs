@@ -36,6 +36,8 @@ public class TableMoney : WaiterTarget
             AmountLabel.GetComponent<Renderer>().sortingOrder = top + 4;
         }
 
+        Effects.Pop(gameObject);  // appear with a little bounce
+
         if (AmountLabel != null)
         {
             AmountLabel.text = "PHP " + (bill + tip);
@@ -74,6 +76,15 @@ public class TableMoney : WaiterTarget
     public override void WaiterArrived(Cat cat)
     {
         GameManager.Instance.CollectMoney(Bill, Tip);
+
+        // Sounds and a floating "+PHP" so the player sees what they earned.
+        SoundManager.Play(Sfx.Coin);
+        Effects.Float(transform.position + Vector3.up * 0.5f, "+PHP " + (Bill + Tip), new Color(0.95f, 0.75f, 0.2f));
+        if (Tip > 0m)
+        {
+            SoundManager.Play(Sfx.Tip);
+            Effects.Float(transform.position + Vector3.up * 0.95f, "+" + Tip + " tip!", new Color(0.95f, 0.45f, 0.6f));
+        }
 
         if (table != null)
         {

@@ -166,6 +166,9 @@ public class CustomerSpawner : MonoBehaviour
 
         line.Add(customer);  // join at the BACK of the line
 
+        SoundManager.Play(Sfx.Arrive);
+        Effects.Pop(customer.gameObject);
+
         if (EntranceDoor != null)
         {
             EntranceDoor.Open();

@@ -87,6 +87,7 @@ public class KitchenManager : WaiterTarget
                 {
                     order.IsReady = true;
                     ShowPlates(order);
+                    SoundManager.Play(Sfx.FoodReady);
                     Debug.Log(order.ItemNames() + " for " + order.Customer.DisplayName +
                               " is ready! Click the plates on the counter.");
                 }
@@ -141,6 +142,7 @@ public class KitchenManager : WaiterTarget
             plate.SetOrderInLayer(TopOrder() + 1);  // just above the highest part of the counter
             plate.SetClickable(true);
             order.Plates.Add(plate);
+            Effects.Pop(plate.gameObject);
         }
     }
 

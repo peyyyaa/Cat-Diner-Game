@@ -287,10 +287,13 @@ public class Customer : WaiterTarget
 
         // Send the order to the kitchen.
         KitchenManager.Instance.StartCooking(this);
+        SoundManager.Play(Sfx.Order);
     }
 
     void ServeFood()
     {
+        SoundManager.Play(Sfx.Serve);
+
         State = CustomerState.Eating;
         eatingTimer = EatingTime;
 
@@ -362,6 +365,8 @@ public class Customer : WaiterTarget
     void LeaveUnhappy()
     {
         GameManager.Instance.CustomerLeftUnhappy(this);
+        SoundManager.Play(Sfx.Angry);
+        Effects.Float(transform.position + Vector3.up * 1.2f, "Hmph!", new Color(0.85f, 0.2f, 0.25f));
         State = CustomerState.Leaving;
 
         // No money left behind: the table is free right away.

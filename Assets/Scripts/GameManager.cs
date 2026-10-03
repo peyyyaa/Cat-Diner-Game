@@ -76,6 +76,15 @@ public class GameManager : MonoBehaviour
 
         Debug.Log("Game over! Money: ₱" + Money + " | Served: " + CustomersServed +
                   " | Lost: " + LostCustomers);
+
+        // Check this day's goal (and unlock the next day if it was reached).
+        bool passed = true;
+        if (LevelManager.Instance != null)
+        {
+            passed = LevelManager.Instance.FinishDay(Money);
+        }
+
+        SoundManager.Play(passed ? Sfx.DayWon : Sfx.DayLost);
     }
 
     // Clicked a waiting cat: seat them at any free table that fits.
@@ -131,6 +140,7 @@ public class GameManager : MonoBehaviour
         if (freeTable != null)
         {
             freeTable.Seat(customer);
+            SoundManager.Play(Sfx.Seat);
             customer.AssignedTable = freeTable;
             customer.SitDown();  // they look at the menu first
             Debug.Log(customer.DisplayName + " was seated at " + freeTable.name + ".");
