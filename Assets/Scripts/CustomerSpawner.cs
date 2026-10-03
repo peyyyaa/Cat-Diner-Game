@@ -28,6 +28,13 @@ public class CustomerSpawner : MonoBehaviour
     // Optional: full animated cats. Each new customer gets a random one.
     public CatLook[] CustomerLooks;
 
+    // Optional: the entrance door, which opens when a customer arrives.
+    public Door EntranceDoor;
+
+    // Chance that a customer arrives with a buddy (0 = never, 1 = always).
+    [Range(0f, 1f)]
+    public float PairChance = 0.4f;
+
     // array: which customer is standing in each waiting spot (empty = free spot).
     Customer[] waitingSpots;
     float spawnTimer;
@@ -69,11 +76,40 @@ public class CustomerSpawner : MonoBehaviour
         Vector3 position = transform.position + Vector3.down * SpotSpacing * spot;
         Customer customer = Instantiate(CustomerPrefab, position, Quaternion.identity);
 
-        customer.CustomerName = CustomerNames[Random.Range(0, CustomerNames.Length)];
+        int nameIndex = Random.Range(0, CustomerNames.Length);
+        customer.CustomerName = CustomerNames[nameIndex];
         customer.MaxPatience = Random.Range(MinPatience, MaxPatience);
+        GiveRandomLook(customer.gameObject);
 
-        // Give them a random look. Animated cats win over still pictures.
-        CustomerAnimator animator = customer.GetComponent<CustomerAnimator>();
+        // Some customers arrive as a pair.
+        bool isPair = customer.Buddy != null && Random.value < PairChance;
+        if (customer.Buddy != null)
+        {
+            customer.Buddy.gameObject.SetActive(isPair);
+        }
+
+        if (isPair)
+        {
+            // The next name in the list, so the pair never share a name.
+            customer.BuddyName = CustomerNames[(nameIndex + 1) % CustomerNames.Length];
+            GiveRandomLook(customer.Buddy.gameObject);
+        }
+
+        waitingSpots[spot] = customer;
+
+        if (EntranceDoor != null)
+        {
+            EntranceDoor.Open();
+        }
+
+        Debug.Log(customer.CustomerName + " arrived at the diner.");
+    }
+
+    // Give one cat (the customer or their buddy) a random look.
+    // Animated cats win over still pictures.
+    void GiveRandomLook(GameObject cat)
+    {
+        CustomerAnimator animator = cat.GetComponent<CustomerAnimator>();
         if (animator != null && CustomerLooks != null && CustomerLooks.Length > 0)
         {
             animator.Look = CustomerLooks[Random.Range(0, CustomerLooks.Length)];
@@ -81,11 +117,8 @@ public class CustomerSpawner : MonoBehaviour
         else if (CustomerSprites != null && CustomerSprites.Length > 0)
         {
             Sprite look = CustomerSprites[Random.Range(0, CustomerSprites.Length)];
-            customer.GetComponent<SpriteRenderer>().sprite = look;
+            cat.GetComponent<SpriteRenderer>().sprite = look;
         }
-
-        waitingSpots[spot] = customer;
-        Debug.Log(customer.CustomerName + " arrived at the diner.");
     }
 
     // for loop: find the first spot with nobody waiting in it.

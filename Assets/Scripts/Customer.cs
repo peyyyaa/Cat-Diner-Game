@@ -11,6 +11,28 @@ public class Customer : WaiterTarget
     public CustomerState State = CustomerState.Waiting; // enum
     public Table AssignedTable;                         // filled in when seated
 
+    // The second cat in a party of two (a child object on the prefab).
+    // The spawner turns it on or off when the customer arrives.
+    public PartyMember Buddy;
+    public string BuddyName = "";
+
+    // Properties: worked out each time they're read.
+    public bool HasBuddy
+    {
+        get { return Buddy != null && Buddy.gameObject.activeSelf; }
+    }
+
+    public int PartySize
+    {
+        get { return HasBuddy ? 2 : 1; }
+    }
+
+    // "Mochi" for one cat, "Mochi & Tofu" for a pair.
+    public string DisplayName
+    {
+        get { return HasBuddy ? CustomerName + " & " + BuddyName : CustomerName; }
+    }
+
     // Patience in seconds (float, from Table 1 of the doc).
     public float MaxPatience = 10f;
     public float Patience;   // public so you can watch it count down in the Inspector
@@ -34,6 +56,8 @@ public class Customer : WaiterTarget
 
     SpriteRenderer spriteRenderer;
     Color startColor;
+    SpriteRenderer buddyRenderer;
+    Color buddyStartColor;
 
     // Start runs once, when the game begins (or when this customer is created).
     void Start()
@@ -41,6 +65,12 @@ public class Customer : WaiterTarget
         Patience = MaxPatience;
         spriteRenderer = GetComponent<SpriteRenderer>();
         startColor = spriteRenderer.color;
+
+        if (Buddy != null)
+        {
+            buddyRenderer = Buddy.GetComponent<SpriteRenderer>();
+            buddyStartColor = buddyRenderer.color;
+        }
 
         if (PatienceBar != null)
         {
@@ -88,6 +118,12 @@ public class Customer : WaiterTarget
         float patienceLeft = Patience / MaxPatience;  // 1 = full, 0 = empty
         spriteRenderer.color = Color.Lerp(AngryColor, startColor, patienceLeft);
 
+        // The buddy shares the same patience, so it gets the same tint.
+        if (HasBuddy)
+        {
+            buddyRenderer.color = Color.Lerp(AngryColor, buddyStartColor, patienceLeft);
+        }
+
         // Shrink the patience bar and fade it from green to red.
         if (PatienceBar != null)
         {
@@ -116,7 +152,7 @@ public class Customer : WaiterTarget
                 need = "Ready to order!";
                 break;
             case CustomerState.Ordering:
-                need = OrderedItems[0].Name;
+                need = OrderText();
                 break;
             case CustomerState.Eating:
                 need = "Yum!";
@@ -126,13 +162,33 @@ public class Customer : WaiterTarget
                 break;
         }
 
-        StatusLabel.text = CustomerName + "\n" + need;
+        StatusLabel.text = DisplayName + "\n" + need;
+    }
+
+    // All ordered dishes as one string, e.g. "Milk Tea, Tuna Pasta".
+    string OrderText()
+    {
+        string text = "";
+        foreach (FoodItem item in OrderedItems)
+        {
+            if (text != "")
+            {
+                text += ", ";
+            }
+            text += item.Name;
+        }
+        return text;
     }
 
     void TakeOrder()
     {
         OrderedItems.Clear();
-        OrderedItems.Add(Menu.GetRandomItem());
+
+        // for loop: every cat in the party orders one dish.
+        for (int i = 0; i < PartySize; i++)
+        {
+            OrderedItems.Add(Menu.GetRandomItem());
+        }
 
         State = CustomerState.Ordering;  // now waiting for their food
 
@@ -140,7 +196,7 @@ public class Customer : WaiterTarget
         Patience = MaxPatience;
         UpdateColor();
 
-        Debug.Log(CustomerName + " ordered " + OrderedItems[0].Name +
+        Debug.Log(DisplayName + " ordered " + OrderText() +
                   ". Total: ₱" + GetOrderTotal());
 
         // Send the order to the kitchen.
@@ -154,6 +210,10 @@ public class Customer : WaiterTarget
 
         // Back to their normal color while they enjoy the food.
         spriteRenderer.color = startColor;
+        if (HasBuddy)
+        {
+            buddyRenderer.color = buddyStartColor;
+        }
 
         // Happy customers don't need a patience bar.
         if (PatienceBar != null)
@@ -161,7 +221,7 @@ public class Customer : WaiterTarget
             PatienceBar.gameObject.SetActive(false);
         }
 
-        Debug.Log("Served " + OrderedItems[0].Name + " to " + CustomerName + ". Enjoy!");
+        Debug.Log("Served " + OrderText() + " to " + DisplayName + ". Enjoy!");
     }
 
     // Adds up the price of everything in the order using the menu's price list.
@@ -202,6 +262,20 @@ public class Customer : WaiterTarget
         Destroy(gameObject);  // remove the customer from the scene
     }
 
+    // Once seated, the cat waiter goes to the table's waiter spot instead of
+    // standing next to one cat. "override" replaces WaiterTarget's version.
+    public override Vector3 StandPosition
+    {
+        get
+        {
+            if (AssignedTable != null)
+            {
+                return AssignedTable.transform.position + AssignedTable.WaiterOffset;
+            }
+            return base.StandPosition;  // "base" = WaiterTarget's original version
+        }
+    }
+
     // Called by the Cat when it reaches this customer.
     // "override" = this is Customer's version of WaiterTarget's WaiterArrived.
     public override void WaiterArrived(Cat cat)
@@ -228,6 +302,12 @@ public class Customer : WaiterTarget
     // Unity calls this automatically when the object is clicked.
     void OnMouseDown()
     {
+        HandleClick();
+    }
+
+    // What a click does. Public so the Buddy can pass its clicks here too.
+    public void HandleClick()
+    {
         // Ignore clicks once the game is over.
         if (GameManager.Instance.GameFinished)
         {
@@ -248,7 +328,7 @@ public class Customer : WaiterTarget
                 break;
 
             case CustomerState.Ordering:
-                Debug.Log(CustomerName + "'s " + OrderedItems[0].Name +
+                Debug.Log(DisplayName + "'s " + OrderText() +
                           " is in the kitchen. Click the counter when it turns yellow.");
                 break;
 

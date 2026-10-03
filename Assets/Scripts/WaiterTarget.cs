@@ -9,7 +9,8 @@ public abstract class WaiterTarget : MonoBehaviour
     public Vector3 StandOffset = new Vector3(-0.9f, 0f, 0f);
 
     // Property: works like a variable, but is calculated each time it's read.
-    public Vector3 StandPosition
+    // "virtual" lets a child class (like Customer) replace it with its own version.
+    public virtual Vector3 StandPosition
     {
         get { return transform.position + StandOffset; }
     }

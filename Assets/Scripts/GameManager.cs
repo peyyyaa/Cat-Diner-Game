@@ -73,7 +73,7 @@ public class GameManager : MonoBehaviour
 
     public void TrySeatCustomer(Customer customer)
     {
-        Table freeTable = FindFreeTable();
+        Table freeTable = FindFreeTable(customer.PartySize);
 
         // if-else: seat the customer, or tell them to keep waiting.
         if (freeTable != null)
@@ -81,11 +81,12 @@ public class GameManager : MonoBehaviour
             freeTable.Seat(customer);
             customer.AssignedTable = freeTable;
             customer.State = CustomerState.Seated;
-            Debug.Log(customer.CustomerName + " was seated at " + freeTable.name + ".");
+            Debug.Log(customer.DisplayName + " was seated at " + freeTable.name + ".");
         }
         else
         {
-            Debug.Log("No free table. " + customer.CustomerName + " keeps waiting.");
+            Debug.Log("No free table for a party of " + customer.PartySize + ". " +
+                      customer.DisplayName + " keeps waiting.");
         }
     }
 
@@ -105,12 +106,13 @@ public class GameManager : MonoBehaviour
         Debug.Log(customer.CustomerName + " ran out of patience and left! Lost customers: " + LostCustomers);
     }
 
-    // for loop: check every table until we find one that isn't occupied.
-    Table FindFreeTable()
+    // for loop: check every table until we find one that's free
+    // AND has enough seats for the whole party.
+    Table FindFreeTable(int partySize)
     {
         for (int i = 0; i < Tables.Length; i++)
         {
-            if (!Tables[i].IsOccupied)
+            if (!Tables[i].IsOccupied && Tables[i].SeatCount >= partySize)
             {
                 return Tables[i];
             }

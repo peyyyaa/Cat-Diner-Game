@@ -1,7 +1,7 @@
 using UnityEngine;
 
-// Put this on the Customer prefab (next to the Customer component).
-// It plays the right set of frames from Look based on the customer's state.
+// Put this on the Customer prefab AND on its Buddy child.
+// It plays the right set of frames from Look based on the party's state.
 public class CustomerAnimator : MonoBehaviour
 {
     // Filled in by the CustomerSpawner when the customer is created.
@@ -16,18 +16,39 @@ public class CustomerAnimator : MonoBehaviour
     Customer customer;
     SpriteRenderer spriteRenderer;
 
+    // Set by the Table when this cat sits down.
+    bool sittingSideways = false;
+    bool faceLeft = false;
+
     Sprite[] currentFrames;  // the animation playing right now
     int frameIndex;
     float frameTimer;
 
     void Start()
     {
-        customer = GetComponent<Customer>();
+        // GetComponentInParent also checks this object itself, so this finds the
+        // Customer on the leader AND on the buddy (whose Customer is on the parent).
+        customer = GetComponentInParent<Customer>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+    }
+
+    // Called by the Table when this cat is seated.
+    public void SitSideways(bool shouldFaceLeft)
+    {
+        sittingSideways = true;
+        faceLeft = shouldFaceLeft;
     }
 
     void Update()
     {
+        if (customer == null)
+        {
+            return;
+        }
+
+        // Side art is drawn facing right, so flip it for seats facing left.
+        spriteRenderer.flipX = sittingSideways && faceLeft;
+
         if (Look == null)
         {
             return;  // no frames assigned: keep whatever sprite the prefab has
@@ -58,28 +79,43 @@ public class CustomerAnimator : MonoBehaviour
         spriteRenderer.sprite = currentFrames[frameIndex];
     }
 
-    // switch: pick the animation that matches what the customer is doing.
+    // switch: pick the animation that matches what the party is doing.
     Sprite[] ChooseFrames()
     {
         switch (customer.State)
         {
             case CustomerState.Seated:
-                return Look.Order;   // paw up: "I'm ready to order!"
+                return Pick(Look.SideOrder, Look.Order);   // paw up: "We're ready to order!"
 
             case CustomerState.Eating:
-                return Look.Eat;
+                return Pick(Look.SideEat, Look.Eat);
 
             case CustomerState.Waiting:
             case CustomerState.Ordering:
-                if (IsUpset() && Look.Upset != null && Look.Upset.Length > 0)
+                if (IsUpset())
                 {
-                    return Look.Upset;
+                    Sprite[] upset = Pick(Look.SideUpset, Look.Upset);
+                    if (upset != null && upset.Length > 0)
+                    {
+                        return upset;
+                    }
                 }
-                return Look.Idle;
+                return Pick(Look.SideSit, Look.Idle);
 
             default:
                 return Look.Idle;
         }
+    }
+
+    // Use the side-view frames while sitting at a table (if they exist),
+    // otherwise fall back to the front-view frames.
+    Sprite[] Pick(Sprite[] side, Sprite[] front)
+    {
+        if (sittingSideways && side != null && side.Length > 0)
+        {
+            return side;
+        }
+        return front;
     }
 
     bool IsUpset()

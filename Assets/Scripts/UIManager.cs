@@ -30,18 +30,17 @@ public class UIManager : MonoBehaviour
         GameManager gm = GameManager.Instance;
 
         // "PHP" instead of the peso sign: the default font has no ₱ symbol.
-        MoneyText.text = "Money: PHP " + gm.Money;
-        ServedText.text = "Served: " + gm.CustomersServed;
-        LostText.text = "Lost: " + gm.LostCustomers;
-
-        // Mathf.CeilToInt rounds up, so the timer shows 1 until it truly hits 0.
-        TimerText.text = "Time: " + Mathf.CeilToInt(gm.TimeLeft);
+        MoneyText.text = "PHP " + gm.Money;
+        ServedText.text = "" + gm.CustomersServed;
+        LostText.text = "" + gm.LostCustomers;
+        TimerText.text = "" + Mathf.CeilToInt(gm.TimeLeft);
 
         if (gm.GameFinished && !GameOverPanel.activeSelf)
         {
             GameOverPanel.SetActive(true);
-            GameOverText.text = "GAME OVER\nEarned PHP " + gm.Money +
-                                "\nServed " + gm.CustomersServed + " | Lost " + gm.LostCustomers;
+            GameOverText.text = "<size=60><color=#B52F47>Thanks for visiting!</color></size>\n\n" +
+                    "Earned PHP " + gm.Money + "\n" +
+                    "Served " + gm.CustomersServed + "  |  Lost " + gm.LostCustomers;
         }
     }
 
