@@ -78,7 +78,28 @@ public class GameManager : MonoBehaviour
                   " | Lost: " + LostCustomers);
     }
 
+    // Clicked a waiting cat: seat them at any free table that fits.
     public void TrySeatCustomer(Customer customer)
+    {
+        TrySeatCustomerAt(customer, null);
+    }
+
+    // Clicked an empty table: seat the cat at the front of the line THERE.
+    public void SeatFirstInLineAt(Table table)
+    {
+        Customer first = (CustomerSpawner.Instance != null) ? CustomerSpawner.Instance.FirstInLine() : null;
+
+        if (first == null)
+        {
+            Debug.Log("Nobody is waiting for a table.");
+            return;
+        }
+
+        TrySeatCustomerAt(first, table);
+    }
+
+    // table == null means "any free table that fits the party".
+    public void TrySeatCustomerAt(Customer customer, Table table)
     {
         // First come, first served: only the cat at the front of the line can be seated.
         CustomerSpawner spawner = CustomerSpawner.Instance;
@@ -90,7 +111,21 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        Table freeTable = FindFreeTable(customer.PartySize);
+        Table freeTable;
+        if (table != null)
+        {
+            // A specific table was chosen: check it's free and big enough.
+            if (table.IsOccupied || table.SeatCount < customer.PartySize)
+            {
+                Debug.Log(table.name + " can't fit " + customer.DisplayName + " right now.");
+                return;
+            }
+            freeTable = table;
+        }
+        else
+        {
+            freeTable = FindFreeTable(customer.PartySize);
+        }
 
         // if-else: seat the customer, or tell them to keep waiting.
         if (freeTable != null)

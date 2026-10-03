@@ -8,11 +8,22 @@ public abstract class WaiterTarget : MonoBehaviour
     // Where the cat stands, relative to this object. Adjust in the Inspector.
     public Vector3 StandOffset = new Vector3(-0.9f, 0f, 0f);
 
+    // Optional (easier): an empty object placed exactly where the cat should stand.
+    // If set, it's used instead of Stand Offset.
+    public Transform StandSpot;
+
     // Property: works like a variable, but is calculated each time it's read.
     // "virtual" lets a child class (like Customer) replace it with its own version.
     public virtual Vector3 StandPosition
     {
-        get { return transform.position + StandOffset; }
+        get
+        {
+            if (StandSpot != null)
+            {
+                return StandSpot.position;
+            }
+            return transform.position + StandOffset;
+        }
     }
 
     // Every class that inherits from WaiterTarget MUST say what happens

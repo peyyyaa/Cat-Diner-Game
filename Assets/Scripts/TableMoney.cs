@@ -22,11 +22,18 @@ public class TableMoney : WaiterTarget
         Bill = bill;
         Tip = tip;
 
-        // Draw on top of the table AND the plates (plates use 3, their food 4).
+        // Draw on top of the table AND the plates (plates use top+1, their food top+2).
+        int top = (fromTable != null) ? fromTable.TopOrder : 0;
+
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
         if (spriteRenderer != null)
         {
-            spriteRenderer.sortingOrder = 5;
+            spriteRenderer.sortingOrder = top + 3;
+        }
+
+        if (AmountLabel != null)
+        {
+            AmountLabel.GetComponent<Renderer>().sortingOrder = top + 4;
         }
 
         if (AmountLabel != null)
@@ -47,7 +54,7 @@ public class TableMoney : WaiterTarget
         {
             if (table != null)
             {
-                return table.transform.position + table.WaiterOffset;
+                return table.WaiterPosition;
             }
             return base.StandPosition;
         }

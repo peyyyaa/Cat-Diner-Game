@@ -2,7 +2,8 @@ using System.Collections.Generic;  // needed for List
 using UnityEngine;
 
 // Put this on an empty object named CustomerSpawner, placed where the FRONT
-// of the waiting line should be. The line goes downward from here.
+// of the waiting line should be (the end farthest from the door).
+// The line grows from here in the Line Direction, toward the door.
 public class CustomerSpawner : MonoBehaviour
 {
     // So other scripts can ask "who is first in line?" (static: one per game).
@@ -21,6 +22,10 @@ public class CustomerSpawner : MonoBehaviour
     // Size of the waiting line, and the gap between spots in it.
     public int MaxWaiting = 4;
     public float SpotSpacing = 1.2f;
+
+    // Which way the line grows from the front (this object is the FRONT of the line).
+    // Point it toward your door: (0,-1) = down, (0,1) = up, (-1,0) = left, (1,0) = right.
+    public Vector2 LineDirection = new Vector2(0f, -1f);
 
     // How fast cats in the line walk forward when the line moves up.
     public float LineWalkSpeed = 3f;
@@ -107,7 +112,8 @@ public class CustomerSpawner : MonoBehaviour
 
     Vector3 SpotPosition(int index)
     {
-        return transform.position + Vector3.down * SpotSpacing * index;
+        Vector3 direction = new Vector3(LineDirection.x, LineDirection.y, 0f).normalized;
+        return transform.position + direction * SpotSpacing * index;
     }
 
     // Is this customer at the front of the line?

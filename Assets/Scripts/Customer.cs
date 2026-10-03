@@ -382,7 +382,7 @@ public class Customer : WaiterTarget
         {
             if (AssignedTable != null)
             {
-                return AssignedTable.transform.position + AssignedTable.WaiterOffset;
+                return AssignedTable.WaiterPosition;
             }
             return base.StandPosition;  // "base" = WaiterTarget's original version
         }

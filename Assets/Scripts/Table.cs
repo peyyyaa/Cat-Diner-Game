@@ -25,11 +25,86 @@ public class Table : MonoBehaviour
     // Where the cat waiter stands when visiting this table, relative to its center.
     public Vector3 WaiterOffset = new Vector3(0f, -1f, 0f);
 
+    // Optional (easier): an empty object placed exactly where the waiter should stand.
+    // If set, it's used instead of Waiter Offset.
+    public Transform WaiterSpot;
+
+    // Property: the actual spot the waiter walks to for this table.
+    public Vector3 WaiterPosition
+    {
+        get
+        {
+            if (WaiterSpot != null)
+            {
+                return WaiterSpot.position;
+            }
+            return transform.position + WaiterOffset;
+        }
+    }
+
     // Only used if Seats is empty (the old one-customer behavior).
     public Vector3 SeatOffset = new Vector3(0f, 0.8f, 0f);
 
     // The plates currently on this table.
     List<ServingPlate> dishes = new List<ServingPlate>();
+
+    // The money waiting to be collected (null = none).
+    TableMoney moneyOnTable;
+
+    // Property: this table's depth number (0 if it has no DepthSort).
+    // Things on the table (cats, plates, money) are drawn relative to it.
+    // Property: the highest Order in Layer of any sprite in this table (tabletop, booths...).
+    // Plates and money go above this, so they always sit ON the table.
+    public int TopOrder
+    {
+        get
+        {
+            int top = DepthBase;
+            foreach (SpriteRenderer part in GetComponentsInChildren<SpriteRenderer>())
+            {
+                if (part.sortingOrder > top)
+                {
+                    top = part.sortingOrder;
+                }
+            }
+            return top;
+        }
+    }
+
+    public int DepthBase
+    {
+        get
+        {
+            DepthSort depth = GetComponent<DepthSort>();
+            return (depth != null) ? depth.BaseOrder : 0;
+        }
+    }
+
+    // Clicking the table does whatever this table needs next.
+    // (The table needs a Box Collider 2D for this.)
+    void OnMouseDown()
+    {
+        if (GameManager.Instance.GameFinished)
+        {
+            return;
+        }
+
+        if (moneyOnTable != null)
+        {
+            // Money waiting: send the waiter to collect it.
+            GameManager.Instance.Waiter.AddTask(moneyOnTable);
+        }
+        else if (SeatedCustomer != null)
+        {
+            // Someone is sitting here: same as clicking them (e.g. take their order).
+            SeatedCustomer.HandleClick();
+        }
+        else if (!IsOccupied)
+        {
+            // Empty table: seat the cat at the front of the line here.
+            GameManager.Instance.SeatFirstInLineAt(this);
+        }
+    }
 
     // List<T>: only the seat slots that were actually filled in the Inspector
     // (empty slots are skipped instead of causing an error).
@@ -65,6 +140,15 @@ public class Table : MonoBehaviour
     {
         IsOccupied = true;
         SeatedCustomer = customer;
+
+        // While seated, the cats are drawn at this table's depth
+        // (in front of the booths, behind the tabletop).
+        DepthSort customerDepth = customer.GetComponent<DepthSort>();
+        DepthSort tableDepth = GetComponent<DepthSort>();
+        if (customerDepth != null && tableDepth != null)
+        {
+            customerDepth.Follow(tableDepth);
+        }
 
         List<Transform> seats = UsableSeats();
 
@@ -122,7 +206,7 @@ public class Table : MonoBehaviour
             }
 
             plate.transform.position = position;
-            plate.SetOrderInLayer(3);  // on top of the tabletop
+            plate.SetOrderInLayer(TopOrder + 1);  // just above the highest part of the table
             dishes.Add(plate);
         }
     }
@@ -167,6 +251,7 @@ public class Table : MonoBehaviour
                                                : transform.position + new Vector3(0f, -0.15f, 0f);
         TableMoney money = Instantiate(moneyPrefab, position, Quaternion.identity);
         money.Setup(this, bill, tip);
+        moneyOnTable = money;
         Debug.Log("Money left on " + name + ": ₱" + bill + " + ₱" + tip + " tip. Click it to collect!");
     }
 
@@ -186,5 +271,6 @@ public class Table : MonoBehaviour
     {
         IsOccupied = false;
         SeatedCustomer = null;
+        moneyOnTable = null;
     }
 }

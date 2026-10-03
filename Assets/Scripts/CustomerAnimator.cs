@@ -20,6 +20,9 @@ public class CustomerAnimator : MonoBehaviour
     bool sittingSideways = false;
     bool faceLeft = false;
 
+    Vector3 lastPosition;    // where the cat was last frame
+    bool walking;            // did it move since last frame?
+
     Sprite[] currentFrames;  // the animation playing right now
     int frameIndex;
     float frameTimer;
@@ -30,6 +33,7 @@ public class CustomerAnimator : MonoBehaviour
         // Customer on the leader AND on the buddy (whose Customer is on the parent).
         customer = GetComponentInParent<Customer>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        lastPosition = transform.position;
     }
 
     // Called by the Table when this cat is seated.
@@ -53,6 +57,10 @@ public class CustomerAnimator : MonoBehaviour
         {
             return;  // no frames assigned: keep whatever sprite the prefab has
         }
+
+        // Walking up the waiting line? (moved since last frame)
+        walking = (transform.position - lastPosition).magnitude > 0.0005f;
+        lastPosition = transform.position;
 
         Sprite[] wanted = ChooseFrames();
         if (wanted == null || wanted.Length == 0)
@@ -95,6 +103,12 @@ public class CustomerAnimator : MonoBehaviour
 
             case CustomerState.Waiting:
             case CustomerState.Ordering:
+                // Shuffling forward in the line: use the walk frames.
+                if (walking && customer.State == CustomerState.Waiting && Look.Walk != null && Look.Walk.Length > 0)
+                {
+                    return Look.Walk;
+                }
+
                 if (IsUpset())
                 {
                     Sprite[] upset = Pick(Look.SideUpset, Look.Upset);

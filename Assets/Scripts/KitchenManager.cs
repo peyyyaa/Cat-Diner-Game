@@ -138,10 +138,31 @@ public class KitchenManager : WaiterTarget
             ServingPlate plate = Instantiate(PlatePrefab, position, Quaternion.identity);
             plate.Order = order;
             plate.ShowFood(SpriteFor(order.Items[i]));
-            plate.SetOrderInLayer(3);  // just above the counter
+            plate.SetOrderInLayer(TopOrder() + 1);  // just above the highest part of the counter
             plate.SetClickable(true);
             order.Plates.Add(plate);
         }
+    }
+
+    // The counter's depth number (0 if it has no DepthSort).
+    int DepthBase()
+    {
+        DepthSort depth = GetComponent<DepthSort>();
+        return (depth != null) ? depth.BaseOrder : 0;
+    }
+
+    // The highest Order in Layer of any sprite in the counter, so plates sit ON it.
+    int TopOrder()
+    {
+        int top = DepthBase();
+        foreach (SpriteRenderer part in GetComponentsInChildren<SpriteRenderer>())
+        {
+            if (part.sortingOrder > top)
+            {
+                top = part.sortingOrder;
+            }
+        }
+        return top;
     }
 
     // for loop: the first plate spot with nothing on it, or -1 if all are full.
