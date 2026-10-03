@@ -22,6 +22,13 @@ public class TableMoney : WaiterTarget
         Bill = bill;
         Tip = tip;
 
+        // Draw on top of the table AND the plates (plates use 3, their food 4).
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.sortingOrder = 5;
+        }
+
         if (AmountLabel != null)
         {
             AmountLabel.text = "PHP " + (bill + tip);

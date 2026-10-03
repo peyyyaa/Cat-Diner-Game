@@ -1,9 +1,13 @@
+using System.Collections.Generic;  // needed for List
 using UnityEngine;
 
-// Put this on an empty object named CustomerSpawner, placed where the
-// waiting line should start. New customers line up downward from here.
+// Put this on an empty object named CustomerSpawner, placed where the FRONT
+// of the waiting line should be. The line goes downward from here.
 public class CustomerSpawner : MonoBehaviour
 {
+    // So other scripts can ask "who is first in line?" (static: one per game).
+    public static CustomerSpawner Instance;
+
     // Drag your Customer PREFAB (from the Project window) into this slot.
     public Customer CustomerPrefab;
 
@@ -18,6 +22,13 @@ public class CustomerSpawner : MonoBehaviour
     public int MaxWaiting = 4;
     public float SpotSpacing = 1.2f;
 
+    // How fast cats in the line walk forward when the line moves up.
+    public float LineWalkSpeed = 3f;
+
+    // When ticked, only the cat at the front of the line can be seated,
+    // so nobody gets overtaken by a cat who arrived later.
+    public bool FirstComeFirstServed = true;
+
     // Random names for customers (array of strings).
     public string[] CustomerNames = { "Mochi", "Tofu", "Biscuit", "Mango", "Pancake", "Nori", "Kiwi", "Sushi" };
 
@@ -28,25 +39,34 @@ public class CustomerSpawner : MonoBehaviour
     // Optional: full animated cats. Each new customer gets a random one.
     public CatLook[] CustomerLooks;
 
-    // Optional: the entrance door, which opens when a customer arrives.
+    // Optional: the entrance door. It opens when a customer arrives,
+    // and new customers appear there and walk to the back of the line.
     public Door EntranceDoor;
 
     // Chance that a customer arrives with a buddy (0 = never, 1 = always).
     [Range(0f, 1f)]
     public float PairChance = 0.4f;
 
-    // array: which customer is standing in each waiting spot (empty = free spot).
-    Customer[] waitingSpots;
+    // List<T> used as a queue: index 0 is the front of the line,
+    // new customers are added at the end (the back).
+    List<Customer> line = new List<Customer>();
     float spawnTimer;
+
+    void Awake()
+    {
+        Instance = this;
+    }
 
     void Start()
     {
-        waitingSpots = new Customer[MaxWaiting];
         spawnTimer = 1f;  // first customer arrives after 1 second
     }
 
     void Update()
     {
+        CleanUpLine();
+        MoveLineForward();
+
         if (GameManager.Instance.GameFinished)
         {
             return;  // no new customers after the game ends
@@ -61,20 +81,63 @@ public class CustomerSpawner : MonoBehaviour
         }
     }
 
+    // Takes out anyone who isn't waiting any more (seated, or left unhappy).
+    // Backward for loop, because we remove items while looping.
+    void CleanUpLine()
+    {
+        for (int i = line.Count - 1; i >= 0; i--)
+        {
+            if (line[i] == null || line[i].State != CustomerState.Waiting)
+            {
+                line.RemoveAt(i);
+            }
+        }
+    }
+
+    // Each cat walks toward its spot: spot 0 is the front, spot 1 behind it, and so on.
+    void MoveLineForward()
+    {
+        for (int i = 0; i < line.Count; i++)
+        {
+            Vector3 spot = SpotPosition(i);
+            line[i].transform.position = Vector3.MoveTowards(
+                line[i].transform.position, spot, LineWalkSpeed * Time.deltaTime);
+        }
+    }
+
+    Vector3 SpotPosition(int index)
+    {
+        return transform.position + Vector3.down * SpotSpacing * index;
+    }
+
+    // Is this customer at the front of the line?
+    public bool IsFirstInLine(Customer customer)
+    {
+        return line.Count > 0 && line[0] == customer;
+    }
+
+    // Who is at the front of the line (or null if nobody is waiting)?
+    public Customer FirstInLine()
+    {
+        return line.Count > 0 ? line[0] : null;
+    }
+
     void TrySpawnCustomer()
     {
-        int spot = FindFreeSpot();
-
         // if-else: only spawn if there's room in the waiting line.
-        if (spot == -1)
+        if (line.Count >= MaxWaiting)
         {
             Debug.Log("The waiting line is full. A customer walked past.");
             return;
         }
 
+        // New customers appear at the door (if there is one), otherwise at their spot.
+        Vector3 startPosition = (EntranceDoor != null) ? EntranceDoor.transform.position
+                                                       : SpotPosition(line.Count);
+        startPosition.z = transform.position.z;
+
         // Instantiate = make a copy of the prefab in the scene.
-        Vector3 position = transform.position + Vector3.down * SpotSpacing * spot;
-        Customer customer = Instantiate(CustomerPrefab, position, Quaternion.identity);
+        Customer customer = Instantiate(CustomerPrefab, startPosition, Quaternion.identity);
 
         int nameIndex = Random.Range(0, CustomerNames.Length);
         customer.CustomerName = CustomerNames[nameIndex];
@@ -95,14 +158,14 @@ public class CustomerSpawner : MonoBehaviour
             GiveRandomLook(customer.Buddy.gameObject);
         }
 
-        waitingSpots[spot] = customer;
+        line.Add(customer);  // join at the BACK of the line
 
         if (EntranceDoor != null)
         {
             EntranceDoor.Open();
         }
 
-        Debug.Log(customer.CustomerName + " arrived at the diner.");
+        Debug.Log(customer.DisplayName + " arrived and joined the line (place " + line.Count + ").");
     }
 
     // Give one cat (the customer or their buddy) a random look.
@@ -119,21 +182,5 @@ public class CustomerSpawner : MonoBehaviour
             Sprite look = CustomerSprites[Random.Range(0, CustomerSprites.Length)];
             cat.GetComponent<SpriteRenderer>().sprite = look;
         }
-    }
-
-    // for loop: find the first spot with nobody waiting in it.
-    // Returns -1 if every spot is taken.
-    int FindFreeSpot()
-    {
-        for (int i = 0; i < waitingSpots.Length; i++)
-        {
-            // A spot is free if it's empty, the customer there was destroyed
-            // (left), or they've already been seated.
-            if (waitingSpots[i] == null || waitingSpots[i].State != CustomerState.Waiting)
-            {
-                return i;
-            }
-        }
-        return -1;
     }
 }

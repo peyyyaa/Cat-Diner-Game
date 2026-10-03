@@ -225,7 +225,11 @@ public class Customer : WaiterTarget
         switch (State)
         {
             case CustomerState.Waiting:
-                need = "Table, please!";
+                // Only the cat at the front asks for a table; the rest wait their turn.
+                bool isFirst = CustomerSpawner.Instance == null ||
+                               !CustomerSpawner.Instance.FirstComeFirstServed ||
+                               CustomerSpawner.Instance.IsFirstInLine(this);
+                need = isFirst ? "Table, please!" : "Waiting in line...";
                 break;
             case CustomerState.ReadingMenu:
                 need = "Hmm, let me see...";

@@ -80,6 +80,16 @@ public class GameManager : MonoBehaviour
 
     public void TrySeatCustomer(Customer customer)
     {
+        // First come, first served: only the cat at the front of the line can be seated.
+        CustomerSpawner spawner = CustomerSpawner.Instance;
+        if (spawner != null && spawner.FirstComeFirstServed && !spawner.IsFirstInLine(customer))
+        {
+            Customer first = spawner.FirstInLine();
+            Debug.Log("Please wait your turn! " + (first != null ? first.DisplayName : "Someone") +
+                      " is first in line.");
+            return;
+        }
+
         Table freeTable = FindFreeTable(customer.PartySize);
 
         // if-else: seat the customer, or tell them to keep waiting.

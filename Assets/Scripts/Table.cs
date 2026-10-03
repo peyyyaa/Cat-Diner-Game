@@ -146,20 +146,40 @@ public class Table : MonoBehaviour
     {
         SeatedCustomer = null;
 
+        // They finished: the plates stay on the table, but empty.
+        EmptyDishes();
+
         TableMoney moneyPrefab = GameManager.Instance.MoneyPrefab;
 
         // No money prefab set up: count the money straight away, like before.
         if (moneyPrefab == null)
         {
+            Debug.LogWarning("GameManager has no Money Prefab, so the money was counted straight away. " +
+                             "Drag the Money prefab from the Project window into GameManager > Money Prefab.");
             GameManager.Instance.CollectMoney(bill, tip);
             ClearDishes();
             Free();
             return;
         }
 
-        Vector3 position = (MoneySpot != null) ? MoneySpot.position : transform.position;
+        // Ternary: use the Money Spot if there is one, otherwise just below the table's center.
+        Vector3 position = (MoneySpot != null) ? MoneySpot.position
+                                               : transform.position + new Vector3(0f, -0.15f, 0f);
         TableMoney money = Instantiate(moneyPrefab, position, Quaternion.identity);
         money.Setup(this, bill, tip);
+        Debug.Log("Money left on " + name + ": ₱" + bill + " + ₱" + tip + " tip. Click it to collect!");
+    }
+
+    // Takes the food off every plate on this table (they're done eating).
+    public void EmptyDishes()
+    {
+        foreach (ServingPlate plate in dishes)
+        {
+            if (plate != null)
+            {
+                plate.ShowEmpty();
+            }
+        }
     }
 
     public void Free()

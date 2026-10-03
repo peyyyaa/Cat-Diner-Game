@@ -24,6 +24,15 @@ public class ServingPlate : WaiterTarget
         }
     }
 
+    // Hides the food so only the empty plate is left.
+    public void ShowEmpty()
+    {
+        if (FoodRenderer != null)
+        {
+            FoodRenderer.enabled = false;
+        }
+    }
+
     // Draws the plate (and the food on it) at this Order in Layer.
     public void SetOrderInLayer(int orderInLayer)
     {
