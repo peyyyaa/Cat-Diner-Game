@@ -46,9 +46,17 @@ public class SoundManager : MonoBehaviour
     AudioSource sfxSource;
     AudioSource musicSource;
 
+    // Keys used to save the player's volume settings on this computer.
+    const string MusicKey = "CatDiner_MusicVolume";
+    const string SfxKey = "CatDiner_SfxVolume";
+
     void Awake()
     {
         Instance = this;
+
+        // Use the saved volumes if the player changed them in Settings before.
+        MusicVolume = PlayerPrefs.GetFloat(MusicKey, MusicVolume);
+        SfxVolume = PlayerPrefs.GetFloat(SfxKey, SfxVolume);
 
         // AudioSource = the "speaker" that plays sounds. We make two: effects and music.
         sfxSource = gameObject.AddComponent<AudioSource>();
@@ -84,20 +92,51 @@ public class SoundManager : MonoBehaviour
     {
         switch (sound)
         {
-            case Sfx.Arrive:    return Arrive;
-            case Sfx.Seat:      return Seat;
-            case Sfx.Order:     return Order;
+            case Sfx.Arrive: return Arrive;
+            case Sfx.Seat: return Seat;
+            case Sfx.Order: return Order;
             case Sfx.FoodReady: return FoodReady;
-            case Sfx.PickUp:    return PickUp;
-            case Sfx.Serve:     return Serve;
-            case Sfx.Coin:      return Coin;
-            case Sfx.Tip:       return Tip;
-            case Sfx.Angry:     return Angry;
-            case Sfx.Click:     return Click;
-            case Sfx.DayWon:    return DayWon;
-            case Sfx.DayLost:   return DayLost;
-            default:            return null;
+            case Sfx.PickUp: return PickUp;
+            case Sfx.Serve: return Serve;
+            case Sfx.Coin: return Coin;
+            case Sfx.Tip: return Tip;
+            case Sfx.Angry: return Angry;
+            case Sfx.Click: return Click;
+            case Sfx.DayWon: return DayWon;
+            case Sfx.DayLost: return DayLost;
+            default: return null;
         }
+    }
+
+    // Called by the Settings sliders. Changes the volume right away and saves it.
+    public static void SetMusicVolume(float volume)
+    {
+        PlayerPrefs.SetFloat(MusicKey, volume);
+        if (Instance != null)
+        {
+            Instance.MusicVolume = volume;
+            Instance.musicSource.volume = volume;
+        }
+    }
+
+    public static void SetSfxVolume(float volume)
+    {
+        PlayerPrefs.SetFloat(SfxKey, volume);
+        if (Instance != null)
+        {
+            Instance.SfxVolume = volume;
+        }
+    }
+
+    // The saved volumes (used to set the sliders when Settings opens).
+    public static float SavedMusicVolume()
+    {
+        return Instance != null ? Instance.MusicVolume : PlayerPrefs.GetFloat(MusicKey, 0.35f);
+    }
+
+    public static float SavedSfxVolume()
+    {
+        return Instance != null ? Instance.SfxVolume : PlayerPrefs.GetFloat(SfxKey, 0.7f);
     }
 
     // For UI buttons: in a button's On Click (), pick SoundManager > PlayClick.
