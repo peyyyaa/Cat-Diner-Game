@@ -11,13 +11,19 @@ public static class Menu
     // each cook time (in seconds) tells C# it's a float.
     public static FoodItem[] MenuItems =
     {
-        new FoodItem("Fish Burger and Fries", 45m, 4f),
-        new FoodItem("Hotdog Bun", 60m, 6f),
-        new FoodItem("Ice Cream Sundae", 35m, 2f)
+        // The names must match the Food Names on the Kitchen Manager EXACTLY.
+        //           name                    price  cook time (s)
+        new FoodItem("Fish Burger and Fries", 75m,   6f),
+        new FoodItem("Hotdog Bun",            50m,   4f),
+        new FoodItem("Ice Cream Sundae",      55m,   3f),
+        new FoodItem("Milkshake",             45m,   2f),
+        new FoodItem("Cherry Pie",            60m,   4f),
+        new FoodItem("Banana Split",          65m,   3f),
+        new FoodItem("Catpuccino",            40m,   2f)
     };
 
     // Dictionary<TKey, TValue>: look up a price by dish name (MenuPrices in the doc).
-    // Example: MenuPrices["Tuna Pasta"] gives 60.
+    // Example: MenuPrices["Milkshake"] gives 45.
     public static Dictionary<string, decimal> MenuPrices = BuildPriceList();
 
     static Dictionary<string, decimal> BuildPriceList()

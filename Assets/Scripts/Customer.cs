@@ -30,8 +30,20 @@ public class Customer : WaiterTarget
     // "Mochi" for one cat, "Mochi & Tofu" for a pair.
     public string DisplayName
     {
-        get { return HasBuddy ? CustomerName + " & " + BuddyName : CustomerName; }
+        get
+        {
+            string names = HasBuddy ? CustomerName + " & " + BuddyName : CustomerName;
+            return IsVip ? "VIP " + names : names;
+        }
     }
+
+    [Header("VIP")]
+    // VIPs are picked by the spawner: less patient, but they tip more.
+    public bool IsVip = false;
+    public float VipTipMultiplier = 2f;
+
+    // Optional: a crown (child object) shown only on VIPs.
+    public GameObject VipBadge;
 
     // Patience in seconds (float, from Table 1 of the doc).
     public float MaxPatience = 10f;
@@ -93,6 +105,11 @@ public class Customer : WaiterTarget
         }
 
         ShowMenuProps(false);
+
+        if (VipBadge != null)
+        {
+            VipBadge.SetActive(IsVip);
+        }
     }
 
     // The thing that shrinks: the anchor if there is one, otherwise the bar itself.
@@ -337,6 +354,13 @@ public class Customer : WaiterTarget
     decimal CalculateTip(decimal bill)
     {
         decimal percent = (decimal)(MaxTipPercent * patienceWhenServed);  // cast float -> decimal
+
+        // VIPs tip extra (double by default).
+        if (IsVip)
+        {
+            percent *= (decimal)VipTipMultiplier;
+        }
+
         return decimal.Round(bill * percent);  // round to whole pesos
     }
 

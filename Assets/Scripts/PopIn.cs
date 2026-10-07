@@ -17,7 +17,8 @@ public class PopIn : MonoBehaviour
 
     void Update()
     {
-        age += Time.deltaTime;
+        // unscaledDeltaTime: still animates when the game is frozen (e.g. the stars at closing time).
+        age += Time.unscaledDeltaTime;
         float t = Mathf.Clamp01(age / Duration);  // 0 at the start, 1 at the end
 
         // First 70%: grow to 115%. Last 30%: shrink back to 100%.

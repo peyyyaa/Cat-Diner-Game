@@ -39,8 +39,7 @@ public class UIManager : MonoBehaviour
         {
             GameOverPanel.SetActive(true);
             GameOverText.text = "<size=60><color=#B52F47>Thanks for visiting!</color></size>\n\n" +
-                    "Earned PHP " + gm.Money + "\n" +
-                    "Served " + gm.CustomersServed + "  |  Lost " + gm.LostCustomers;
+                    "Earned PHP " + gm.Money + "\n";
         }
     }
 

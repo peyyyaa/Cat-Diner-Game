@@ -48,6 +48,13 @@ public class CustomerSpawner : MonoBehaviour
     // and new customers appear there and walk to the back of the line.
     public Door EntranceDoor;
 
+    // Chance that a customer is a VIP (the LevelManager sets this for each day).
+    [Range(0f, 1f)]
+    public float VipChance = 0.1f;
+
+    // VIPs have this much of the normal patience (0.6 = 60%).
+    public float VipPatienceMultiplier = 0.6f;
+
     // Chance that a customer arrives with a buddy (0 = never, 1 = always).
     [Range(0f, 1f)]
     public float PairChance = 0.4f;
@@ -148,6 +155,14 @@ public class CustomerSpawner : MonoBehaviour
         int nameIndex = Random.Range(0, CustomerNames.Length);
         customer.CustomerName = CustomerNames[nameIndex];
         customer.MaxPatience = Random.Range(MinPatience, MaxPatience);
+
+        // Some customers are VIPs: less patient, bigger tips.
+        if (Random.value < VipChance)
+        {
+            customer.IsVip = true;
+            customer.MaxPatience *= VipPatienceMultiplier;
+            Effects.Float(startPosition + Vector3.up * 1.2f, "VIP!", new Color(0.95f, 0.75f, 0.2f));
+        }
         GiveRandomLook(customer.gameObject);
 
         // Some customers arrive as a pair.

@@ -26,6 +26,10 @@ public class LevelData
     // How many customers fit in the waiting line.
     public int MaxWaiting = 3;
 
+    // Chance that a customer is a VIP (impatient, but tips double).
+    [Range(0f, 1f)]
+    public float VipChance = 0.1f;
+
     // Empty constructor: Unity uses this when you add a new day in the Inspector.
     public LevelData()
     {
@@ -33,7 +37,7 @@ public class LevelData
 
     // Constructor, so the default days can be written in one line each.
     public LevelData(string name, int goal, float length, float spawn, float minPatience, float maxPatience,
-                     float pairChance, int maxWaiting)
+                     float pairChance, int maxWaiting, float vipChance)
     {
         Name = name;
         GoalMoney = goal;
@@ -43,5 +47,6 @@ public class LevelData
         MaxPatience = maxPatience;
         PairChance = pairChance;
         MaxWaiting = maxWaiting;
+        VipChance = vipChance;
     }
 }

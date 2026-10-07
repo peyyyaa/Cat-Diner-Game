@@ -20,9 +20,8 @@ public class LevelUI : MonoBehaviour
     {
         if (MenuLevelText != null)
         {
-            // In the menu: Start continues from the highest unlocked day.
+            // In the menu: start on the highest unlocked day.
             LevelManager.CurrentLevel = LevelManager.HighestUnlocked();
-            MenuLevelText.text = "Day " + (LevelManager.CurrentLevel + 1);
         }
 
         if (NextLevelButton != null)
@@ -33,6 +32,11 @@ public class LevelUI : MonoBehaviour
 
     void Update()
     {
+        if (MenuLevelText != null)
+        {
+            UpdateMenuLabel();
+        }
+
         LevelManager levels = LevelManager.Instance;
         GameManager game = GameManager.Instance;
         if (levels == null || game == null)
@@ -73,6 +77,38 @@ public class LevelUI : MonoBehaviour
         }
     }
 
+    // Main menu: keep the label up to date every frame
+    // (so it changes straight away after a reset or a day change).
+    void UpdateMenuLabel()
+    {
+        // Never show a day that isn't unlocked yet.
+        int highest = LevelManager.HighestUnlocked();
+        LevelManager.CurrentLevel = Mathf.Clamp(LevelManager.CurrentLevel, 0, highest);
+
+        int day = LevelManager.CurrentLevel;
+        int stars = DaySummary.BestStars(day);
+
+        string label = "Day " + (day + 1);
+        if (stars > 0)
+        {
+            label += "  (" + stars + "/3 stars)";
+        }
+        MenuLevelText.text = label;
+    }
+
+    // Main menu buttons: pick an earlier day, or go back up to the highest unlocked one.
+    public void MenuPreviousDay()
+    {
+        LevelManager.CurrentLevel = Mathf.Max(0, LevelManager.CurrentLevel - 1);
+        SoundManager.Play(Sfx.Click);
+    }
+
+    public void MenuNextDay()
+    {
+        LevelManager.CurrentLevel = Mathf.Min(LevelManager.HighestUnlocked(), LevelManager.CurrentLevel + 1);
+        SoundManager.Play(Sfx.Click);
+    }
+
     // Button: Next Day.
     public void NextLevel()
     {
@@ -82,10 +118,6 @@ public class LevelUI : MonoBehaviour
     // Button (main menu, optional): start over from Day 1.
     public void ResetProgress()
     {
-        LevelManager.ResetProgress();
-        if (MenuLevelText != null)
-        {
-            MenuLevelText.text = "Day 1";
-        }
+        LevelManager.ResetProgress();  // the label updates by itself next frame
     }
 }

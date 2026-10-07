@@ -28,8 +28,12 @@ public class GameManager : MonoBehaviour
     // decimals, but it now shows on screen through the UIManager.
     public decimal Money = 0m;
 
-    // How much of the money came from tips.
+    // How much of the money came from tips, and the biggest single tip.
     public decimal TotalTips = 0m;
+    public decimal BestTip = 0m;
+
+    // How many VIP parties finished their meal today.
+    public int VipsServed = 0;
 
     // How many customers paid and left happy.
     public int CustomersServed = 0;
@@ -156,6 +160,11 @@ public class GameManager : MonoBehaviour
     public void CustomerFinished(Customer customer)
     {
         CustomersServed++;
+
+        if (customer.IsVip)
+        {
+            VipsServed++;
+        }
         Debug.Log(customer.DisplayName + " finished eating and left money on the table. Served: " + CustomersServed);
     }
 
@@ -165,6 +174,11 @@ public class GameManager : MonoBehaviour
     {
         Money += bill + tip;
         TotalTips += tip;
+
+        if (tip > BestTip)
+        {
+            BestTip = tip;
+        }
         Debug.Log("Collected ₱" + bill + " + ₱" + tip + " tip. Money: ₱" + Money);
     }
 

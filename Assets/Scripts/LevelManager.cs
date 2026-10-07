@@ -66,6 +66,7 @@ public class LevelManager : MonoBehaviour
             Spawner.MaxPatience = day.MaxPatience;
             Spawner.PairChance = day.PairChance;
             Spawner.MaxWaiting = day.MaxWaiting;
+            Spawner.VipChance = day.VipChance;
         }
 
         Debug.Log("Starting " + day.Name + ". Goal: ₱" + day.GoalMoney);
@@ -108,6 +109,9 @@ public class LevelManager : MonoBehaviour
     {
         PlayerPrefs.DeleteKey(SaveKey);
         CurrentLevel = 0;
+
+        // A fresh start: show the How to Play guide again on the next game.
+        HowToPlay.ForgetSeen();
     }
 
     // array: the default five days, from easy to hard.
@@ -115,12 +119,24 @@ public class LevelManager : MonoBehaviour
     {
         return new LevelData[]
         {
-            //            name     goal  length spawn  patience   pairs  line
-            new LevelData("Day 1", 150,  90f,   7f,    20f, 28f,  0.10f, 3),
-            new LevelData("Day 2", 250,  90f,   6f,    17f, 24f,  0.25f, 4),
-            new LevelData("Day 3", 350,  100f,  5f,    15f, 21f,  0.35f, 4),
-            new LevelData("Day 4", 450,  110f,  4.5f,  13f, 19f,  0.45f, 5),
-            new LevelData("Day 5", 550,  120f,  4f,    11f, 17f,  0.55f, 5),
+            //            name     goal  length spawn  patience   pairs  line  VIPs
+            // Goals are about 2/3 of what a good player earns, so 3 stars (goal x 1.5)
+            // needs a near-perfect day. Dishes cost PHP 40-75, so one cat pays about PHP 60.
+            new LevelData("Day 1", 500,  90f,   7f,    20f, 28f,  0.10f, 3,    0f),
+            new LevelData("Day 2", 800,  90f,   6f,    17f, 24f,  0.25f, 4,    0.10f),
+            new LevelData("Day 3", 1100, 100f,  5f,    15f, 21f,  0.35f, 4,    0.15f),
+            new LevelData("Day 4", 1400, 110f,  4.5f,  13f, 19f,  0.45f, 5,    0.20f),
+            new LevelData("Day 5", 1800, 120f,  4f,    11f, 17f,  0.55f, 5,    0.25f),
         };
+    }
+
+    // The Levels list is saved in the scene, so changing the numbers above does NOT
+    // update a GameManager that already exists. Right-click the Level Manager
+    // component's title > "Reset days to defaults" to copy these numbers in.
+    [ContextMenu("Reset days to defaults")]
+    void ResetDaysToDefaults()
+    {
+        Levels = DefaultLevels();
+        Debug.Log("Days reset to the default goals and settings.");
     }
 }
